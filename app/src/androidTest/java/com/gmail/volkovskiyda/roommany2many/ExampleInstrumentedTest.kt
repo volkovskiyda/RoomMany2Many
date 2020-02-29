@@ -34,6 +34,7 @@ class ExampleInstrumentedTest {
             Owner("0", 0, "0"),
             Owner("1", 1, "1")
         ).map { owner -> owner.copy(id = owner.age + 1L) }
+
         dao.insertOwners(owners)
         dao.owners() shouldBe owners
     }
@@ -44,6 +45,7 @@ class ExampleInstrumentedTest {
             Dog("0", 0, Coordinate(0.0, 0.0)),
             Dog("1", 1, Coordinate(1.0, 1.0))
         ).map { dog -> dog.copy(id = dog.age + 1L) }
+
         dao.insertDogs(dogs)
         dao.dogs() shouldBe dogs
     }
@@ -56,6 +58,7 @@ class ExampleInstrumentedTest {
             OwnerAndDog(1, 0),
             OwnerAndDog(1, 1)
         )
+
         dao.insertOwnersAndDogs(ownersAndDogs)
         dao.ownersAndDogs() shouldBe ownersAndDogs
     }
@@ -67,6 +70,7 @@ class ExampleInstrumentedTest {
         val dog2 = Dog("2", 2, Coordinate(2.0, 2.0))
         val dog3 = Dog("3", 3, Coordinate(3.0, 3.0))
         val dog4 = Dog("4", 4, Coordinate(4.0, 4.0))
+
         val ownerWithDogs = listOf(
             OwnerWithDogs(Owner("0", 0, "0"), listOf(dog0, dog1)),
             OwnerWithDogs(Owner("1", 1, "1"), listOf(dog1, dog2, dog3)),
@@ -75,20 +79,15 @@ class ExampleInstrumentedTest {
         ).map { ownerDogs ->
             ownerDogs.copy(
                 ownerDogs.owner.copy(id = ownerDogs.owner.age + 1L),
-                ownerDogs.dogs.map { dog -> dog.copy(id = dog.age + 1L) })
+                ownerDogs.dogs.map { dog -> dog.copy(id = dog.age + 1L) }
+            )
         }
 
         dao.insertOwners(ownerWithDogs.map(OwnerWithDogs::owner))
         dao.insertDogs(ownerWithDogs.flatMap(OwnerWithDogs::dogs))
         dao.insertOwnersAndDogs(ownerWithDogs.flatMap { ownerDogs ->
-            ownerDogs.dogs.map { dog ->
-                OwnerAndDog(
-                    ownerDogs.owner.id,
-                    dog.id
-                )
-            }
+            ownerDogs.dogs.map { dog -> OwnerAndDog(ownerDogs.owner.id, dog.id) }
         })
-
         dao.ownerWithDogs() shouldBe ownerWithDogs
     }
 
@@ -99,6 +98,7 @@ class ExampleInstrumentedTest {
         val owner2 = Owner("2", 2, "2")
         val owner3 = Owner("3", 3, "3")
         val owner4 = Owner("4", 4, "4")
+
         val dogWithOwners = listOf(
             DogWithOwners(Dog("0", 0, Coordinate(0.0, 0.0)), listOf(owner0, owner1)),
             DogWithOwners(Dog("1", 1, Coordinate(1.0, 1.0)), listOf(owner1, owner2, owner3)),
@@ -107,20 +107,82 @@ class ExampleInstrumentedTest {
         ).map { dogOwners ->
             dogOwners.copy(
                 dogOwners.dog.copy(id = dogOwners.dog.age + 1L),
-                dogOwners.owners.map { owner -> owner.copy(id = owner.age + 1L) })
+                dogOwners.owners.map { owner -> owner.copy(id = owner.age + 1L) }
+            )
         }
 
         dao.insertDogs(dogWithOwners.map(DogWithOwners::dog))
         dao.insertOwners(dogWithOwners.flatMap(DogWithOwners::owners))
         dao.insertOwnersAndDogs(dogWithOwners.flatMap { dogOwners ->
-            dogOwners.owners.map { owner ->
-                OwnerAndDog(
-                    owner.id,
-                    dogOwners.dog.id
-                )
-            }
+            dogOwners.owners.map { owner -> OwnerAndDog(owner.id, dogOwners.dog.id) }
         })
-
         dao.dogWithOwners() shouldBe dogWithOwners
+    }
+
+    @Test
+    fun shouldInsertAndGetOwnerByQuery() = runBlocking {
+        val dog0 = Dog("0", 0, Coordinate(0.0, 0.0))
+        val dog1 = Dog("1", 1, Coordinate(1.0, 1.0))
+        val dog2 = Dog("2", 2, Coordinate(2.0, 2.0))
+        val dog3 = Dog("3", 3, Coordinate(3.0, 3.0))
+        val dog4 = Dog("4", 4, Coordinate(4.0, 4.0))
+
+        val owner0 = Owner("0", 0, "0")
+        val owner1 = Owner("1", 1, "1")
+        val owner2 = Owner("2", 2, "2")
+        val owner3 = Owner("3", 3, "3")
+
+        val ownerWithDogs = listOf(
+            OwnerWithDogs(owner0, listOf(dog0, dog1)),
+            OwnerWithDogs(owner1, listOf(dog1, dog2, dog3)),
+            OwnerWithDogs(owner2, listOf(dog2, dog4)),
+            OwnerWithDogs(owner3, listOf(dog3, dog4))
+        ).map { ownerDogs ->
+            ownerDogs.copy(
+                ownerDogs.owner.copy(id = ownerDogs.owner.age + 1L),
+                ownerDogs.dogs.map { dog -> dog.copy(id = dog.age + 1L) })
+        }
+
+        dao.insertOwners(ownerWithDogs.map(OwnerWithDogs::owner))
+        dao.insertDogs(ownerWithDogs.flatMap(OwnerWithDogs::dogs))
+        dao.insertOwnersAndDogs(ownerWithDogs.flatMap { ownerDogs ->
+            ownerDogs.dogs.map { dog -> OwnerAndDog(ownerDogs.owner.id, dog.id) }
+        })
+        dao.owners(listOf("0", "1"), listOf("1", "2")) shouldBe
+                listOf(owner0, owner1).map { owner -> owner.copy(id = owner.age + 1L) }
+    }
+
+    @Test
+    fun shouldInsertAndGetDogByQuery() = runBlocking {
+        val owner0 = Owner("0", 0, "0")
+        val owner1 = Owner("1", 1, "1")
+        val owner2 = Owner("2", 2, "2")
+        val owner3 = Owner("3", 3, "3")
+        val owner4 = Owner("4", 4, "4")
+
+        val dog0 = Dog("0", 0, Coordinate(0.0, 0.0))
+        val dog1 = Dog("1", 1, Coordinate(1.0, 1.0))
+        val dog2 = Dog("2", 2, Coordinate(2.0, 2.0))
+        val dog3 = Dog("3", 3, Coordinate(3.0, 3.0))
+
+        val dogWithOwners = listOf(
+            DogWithOwners(dog0, listOf(owner0, owner1)),
+            DogWithOwners(dog1, listOf(owner1, owner2, owner3)),
+            DogWithOwners(dog2, listOf(owner2, owner4)),
+            DogWithOwners(dog3, listOf(owner3, owner4))
+        ).map { dogOwners ->
+            dogOwners.copy(
+                dogOwners.dog.copy(id = dogOwners.dog.age + 1L),
+                dogOwners.owners.map { owner -> owner.copy(id = owner.age + 1L) }
+            )
+        }
+
+        dao.insertDogs(dogWithOwners.map(DogWithOwners::dog))
+        dao.insertOwners(dogWithOwners.flatMap(DogWithOwners::owners))
+        dao.insertOwnersAndDogs(dogWithOwners.flatMap { dogOwners ->
+            dogOwners.owners.map { owner -> OwnerAndDog(owner.id, dogOwners.dog.id) }
+        })
+        dao.dogs(listOf("1", "2"), listOf("0", "1")) shouldBe
+                listOf(dog0, dog1).map { dog -> dog.copy(id = dog.age + 1L) }
     }
 }

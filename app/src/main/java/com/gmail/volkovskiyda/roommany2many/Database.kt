@@ -36,6 +36,34 @@ abstract class Dao {
     @Transaction
     @Query("SELECT * FROM dog")
     abstract suspend fun dogWithOwners(): List<DogWithOwners>
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM dog
+        JOIN owner_and_dog ON dog.id = dogId
+        JOIN owner ON ownerId = owner.id
+        WHERE owner.name IN (:ownerNames) AND dog.name IN (:dogNames)
+    """
+    )
+    abstract suspend fun ownersQuery(ownerNames: List<String>, dogNames: List<String>): List<Owner>
+
+    suspend fun owners(ownerNames: List<String>, dogNames: List<String>): List<Owner> =
+        ownersQuery(ownerNames, dogNames).toSet().toList()
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM owner
+        JOIN owner_and_dog ON owner.id = ownerId
+        JOIN dog ON dogId = dog.id
+        WHERE owner.name IN (:ownerNames) AND dog.name IN (:dogNames)
+    """
+    )
+    abstract suspend fun dogsQuery(ownerNames: List<String>, dogNames: List<String>): List<Dog>
+
+    suspend fun dogs(ownerNames: List<String>, dogNames: List<String>): List<Dog> =
+        dogsQuery(ownerNames, dogNames).toSet().toList()
 }
 
 data class Coordinate(val lat: Double, val lon: Double)
